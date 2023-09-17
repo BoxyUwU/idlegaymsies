@@ -22,6 +22,10 @@ fn main() {
     // Make a Context.
     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
         .window_mode(WindowMode {
+            // Uncomment w/h and set maximized to false for consistent testing
+            // See https://docs.rs/ggez/latest/ggez/conf/struct.WindowMode.html
+            // width: 1280.0,
+            // height: 720.0,
             maximized: true,
             resizable: true,
             ..Default::default()
