@@ -25,26 +25,26 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let my_game = MyGame::new(&mut ctx);
+    let my_game = MainMenuState::new(&mut ctx);
 
     // Run!
     event::run(ctx, event_loop, my_game);
 }
 
-struct MyGame {
+struct MainMenuState {
     // Your state here...
 }
 
-impl MyGame {
-    pub fn new(_ctx: &mut Context) -> MyGame {
+impl MainMenuState {
+    pub fn new(_ctx: &mut Context) -> MainMenuState {
         // Load/create resources such as images here.
-        MyGame {
+        MainMenuState {
             // ...
         }
     }
 }
 
-impl EventHandler for MyGame {
+impl EventHandler for MainMenuState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         // Update code here...
         Ok(())
