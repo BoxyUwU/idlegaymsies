@@ -53,6 +53,10 @@ impl EventHandler for MyGame {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
         // Draw code here...
+        let image1 = graphics::Image::from_path(ctx, "/kenney_ui/dotBlue.png")?;
+        // Draw an image.
+        let dst = glam::Vec2::new(200.0, 200.0);
+        canvas.draw(&image1, graphics::DrawParam::new().dest(dst));
         canvas.finish(ctx)
     }
 }
