@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 ggez = "0.9.3"
 ggegui = "0.3.7"
+egui_extras = "0.22.0"
+image = { version = "0.24", features = ["jpeg", "png"] }
