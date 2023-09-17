@@ -1,8 +1,10 @@
 use std::{env, path};
 
 use ggez::event::{self, EventHandler};
-use ggez::graphics::{self, Color};
+use ggez::graphics::{self, Color, DrawParam};
 use ggez::{glam, Context, ContextBuilder, GameResult};
+
+use ggegui::{egui, Gui};
 
 fn main() {
     // Resource
@@ -33,30 +35,45 @@ fn main() {
 
 struct MainMenuState {
     // Your state here...
+    gui: Gui,
 }
 
 impl MainMenuState {
-    pub fn new(_ctx: &mut Context) -> MainMenuState {
+    pub fn new(ctx: &mut Context) -> MainMenuState {
         // Load/create resources such as images here.
         MainMenuState {
             // ...
+            gui: Gui::new(ctx),
         }
     }
 }
 
 impl EventHandler for MainMenuState {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         // Update code here...
+        let gui_ctx = self.gui.ctx();
+
+        egui::Window::new("UI").show(&gui_ctx, |ui| {
+            ui.label("a very nice gui :3");
+            if ui.button("print \"hello world\"").clicked() {
+                println!("hello world");
+            }
+            if ui.button("quit").clicked() {
+                ctx.request_quit();
+            }
+        });
+        self.gui.update(ctx);
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
         // Draw code here...
-        let image1 = graphics::Image::from_path(ctx, "/kenney_ui/dotBlue.png")?;
-        // Draw an image.
-        let dst = glam::Vec2::new(200.0, 200.0);
-        canvas.draw(&image1, graphics::DrawParam::new().dest(dst));
+        // let image1 = graphics::Image::from_path(ctx, "/kenney_ui/dotBlue.png")?;
+        // // Draw an image.
+        // let dst = glam::Vec2::new(200.0, 200.0);
+        // canvas.draw(&image1, graphics::DrawParam::new().dest(dst));
+        canvas.draw(&self.gui, DrawParam::default().dest(glam::Vec2::ZERO));
         canvas.finish(ctx)
     }
 }
