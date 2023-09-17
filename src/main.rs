@@ -1,5 +1,6 @@
 use std::{env, path};
 
+use ggez::conf::WindowMode;
 use ggez::event::{self, EventHandler};
 use ggez::graphics::{self, Color, DrawParam};
 use ggez::{glam, Context, ContextBuilder, GameResult};
@@ -20,6 +21,11 @@ fn main() {
 
     // Make a Context.
     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
+        .window_mode(WindowMode {
+            maximized: true,
+            resizable: true,
+            ..Default::default()
+        })
         .add_resource_path(resource_dir)
         .build()
         .expect("aieee, could not create ggez context!");
