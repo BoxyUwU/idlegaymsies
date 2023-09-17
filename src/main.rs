@@ -3,7 +3,7 @@ use std::{env, path};
 use ggez::conf::WindowMode;
 use ggez::event::{self, EventHandler};
 use ggez::glam::Vec2;
-use ggez::graphics::{self, Color, DrawParam, Image, ImageFormat, ScreenImage};
+use ggez::graphics::{self, Color, DrawParam, Drawable, Image, ImageFormat, Rect, ScreenImage};
 use ggez::{glam, Context, ContextBuilder, GameResult};
 
 fn main() {
@@ -101,20 +101,29 @@ impl EventHandler for MainMenuState {
         // ); // TODO: Figure out why this doesn't work
 
         let (screen_width, screen_height) = ctx.gfx.drawable_size();
-        let (image_width, image_height) =
-            (self.assets.menu_bg.width(), self.assets.menu_bg.height());
-        let scalar = Vec2::new(
-            screen_width / image_width as f32,
-            screen_height / image_height as f32,
+        let ui_box = UiBox::new(
+            screen_width,
+            screen_height,
+            self.assets.menu_bg.clone(), // TODO: is this clone wise?
+            AnchorSettings::new().stretch_full(),
         );
+        // let (image_width, image_height) =
+        //     (self.assets.menu_bg.width(), self.assets.menu_bg.height());
+        // let scalar = Vec2::new(
+        //     screen_width / image_width as f32,
+        //     screen_height / image_height as f32,
+        // );
 
-        let image1 = graphics::Image::from_path(ctx, "/kenney_ui/dotBlue.png")?;
-        let dst = glam::Vec2::new(200.0, 200.0);
-        canvas.draw(&image1, graphics::DrawParam::new().dest(dst));
-        canvas.draw(
-            &self.assets.menu_bg,
-            graphics::DrawParam::new().scale(scalar),
-        );
+        // let image1 = graphics::Image::from_path(ctx, "/kenney_ui/dotBlue.png")?;
+        // let dst = glam::Vec2::new(200.0, 200.0);
+        // canvas.draw(&image1, graphics::DrawParam::new().dest(dst));
+        // canvas.draw(
+        //     &self.assets.menu_bg,
+        //     graphics::DrawParam::new().scale(scalar),
+        // );
+
+        canvas.draw(&ui_box, DrawParam::new());
+
         canvas.finish(ctx)
 
         // let mut canvas = graphics::Canvas::from_screen_image(
@@ -132,5 +141,273 @@ impl EventHandler for MainMenuState {
         //     graphics::DrawParam::new().dest(Vec2::new(300.0, 300.0)),
         // );
         // canvas.finish(ctx)
+    }
+}
+
+// enum Corner {
+//     TopLeft,
+//     TopRight,
+//     BottomLeft,
+//     BottomRight,
+// }
+
+struct AnchorSettings {
+    top_left: AnchorPoint,
+    top_right: AnchorPoint,
+    bottom_left: AnchorPoint,
+    bottom_right: AnchorPoint,
+}
+
+impl AnchorSettings {
+    fn new() -> AnchorSettings {
+        AnchorSettings {
+            top_left: AnchorPoint::None,
+            top_right: AnchorPoint::None,
+            bottom_left: AnchorPoint::None,
+            bottom_right: AnchorPoint::None,
+        }
+    }
+
+    fn no_anchors() -> AnchorSettings {
+        AnchorSettings {
+            top_left: AnchorPoint::None,
+            top_right: AnchorPoint::None,
+            bottom_left: AnchorPoint::None,
+            bottom_right: AnchorPoint::None,
+        }
+    }
+
+    // fn set_top_left(&self, anchor: AnchorPoint) -> AnchorSettings {
+    //     let top_left = anchor;
+    //     let top_right = self.top_right;
+    //     let bottom_left = self.bottom_left;
+    //     let bottom_right = self.bottom_right;
+    //     AnchorSettings {
+    //         top_left,
+    //         top_right,
+    //         bottom_left,
+    //         bottom_right,
+    //     }
+    // }
+
+    // fn set_top_right(&self, anchor: AnchorPoint) -> AnchorSettings {
+    //     AnchorSettings {
+    //         top_left: self.top_left,
+    //         top_right: anchor,
+    //         bottom_left: self.bottom_left,
+    //         bottom_right: self.bottom_right,
+    //     }
+    // }
+
+    fn set_all(&self, anchor: AnchorPoint) -> AnchorSettings {
+        AnchorSettings {
+            top_left: anchor,
+            top_right: anchor,
+            bottom_left: anchor,
+            bottom_right: anchor,
+        }
+    }
+
+    fn stretch_top(&self) -> AnchorSettings {
+        AnchorSettings {
+            top_left: AnchorPoint::TopLeft,
+            top_right: AnchorPoint::TopRight,
+            bottom_left: self.bottom_left,
+            bottom_right: self.bottom_right,
+        }
+    }
+
+    fn stretch_bottom(&self) -> AnchorSettings {
+        AnchorSettings {
+            top_left: self.top_left,
+            top_right: self.top_right,
+            bottom_left: AnchorPoint::BottomLeft,
+            bottom_right: AnchorPoint::BottomRight,
+        }
+    }
+
+    fn stretch_left(&self) -> AnchorSettings {
+        AnchorSettings {
+            top_left: AnchorPoint::TopLeft,
+            top_right: self.top_right,
+            bottom_left: AnchorPoint::BottomLeft,
+            bottom_right: self.bottom_right,
+        }
+    }
+
+    fn stretch_right(&self) -> AnchorSettings {
+        AnchorSettings {
+            top_left: self.top_left,
+            top_right: AnchorPoint::TopRight,
+            bottom_left: self.bottom_left,
+            bottom_right: AnchorPoint::BottomRight,
+        }
+    }
+
+    fn stretch_full(&self) -> AnchorSettings {
+        AnchorSettings {
+            top_left: AnchorPoint::TopLeft,
+            top_right: AnchorPoint::TopRight,
+            bottom_left: AnchorPoint::BottomLeft,
+            bottom_right: AnchorPoint::BottomRight,
+        }
+    }
+}
+
+// fn rectify_corner_overlap(
+//     top_left: (f32, f32),
+//     top_right: (f32, f32),
+//     bottom_left: (f32, f32),
+//     bottom_right: (f32, f32),
+// ) -> ((f32, f32), (f32, f32), (f32, f32), (f32, f32)) {
+//     // check left
+//     if top_right.0 < top_left.0
+//     // check right
+//     // check top
+//     // if bottom_left.1 > top_left.1
+//     // check bottom
+// }
+
+#[derive(Copy, Clone)]
+enum AnchorPoint {
+    None,
+    Custom(f32, f32),
+    TopLeft,
+    TopCenter,
+    TopRight,
+    CenterLeft,
+    CenterCenter,
+    CenterRight,
+    BottomLeft,
+    BottomCenter,
+    BottomRight,
+}
+
+impl AnchorPoint {
+    fn to_tuple_fraction(&self) -> (f32, f32) {
+        match self {
+            AnchorPoint::None => (0.0, 0.0),
+            AnchorPoint::Custom(x, y) => (*x, *y),
+            AnchorPoint::TopLeft => (0.0, 0.0),
+            AnchorPoint::TopCenter => (0.5, 0.0),
+            AnchorPoint::TopRight => (1.0, 0.0),
+            AnchorPoint::CenterLeft => (0.0, 0.5),
+            AnchorPoint::CenterCenter => (0.5, 0.5),
+            AnchorPoint::CenterRight => (1.0, 0.5),
+            AnchorPoint::BottomLeft => (0.0, 1.0),
+            AnchorPoint::BottomCenter => (0.5, 1.0),
+            AnchorPoint::BottomRight => (1.0, 1.0),
+        }
+    }
+
+    fn to_tuple_pixels(&self, ctx: &mut Context) -> (f32, f32) {
+        let (width, height) = ctx.gfx.size();
+        let fraction = self.to_tuple_fraction();
+        (fraction.0 * width, fraction.1 * height)
+    }
+
+    fn to_vec2_fraction(&self) -> Vec2 {
+        let tuple = self.to_tuple_fraction();
+        tuple_to_vec2(tuple)
+    }
+
+    fn to_vec2_pixels(&self, ctx: &mut Context) -> Vec2 {
+        let tuple = self.to_tuple_pixels(ctx);
+        tuple_to_vec2(tuple)
+    }
+
+    // fn is_left_of(&self, other: AnchorPoint) -> bool {
+    //     let self_right = match &self {
+    //         AnchorPoint::None => return false,
+    //         AnchorPoint::Custom(x, _) => x,
+    //         AnchorPoint::TopLeft => todo!(),
+    //         AnchorPoint::TopCenter => todo!(),
+    //         AnchorPoint::TopRight => todo!(),
+    //         AnchorPoint::CenterLeft => todo!(),
+    //         AnchorPoint::CenterCenter => todo!(),
+    //         AnchorPoint::CenterRight => todo!(),
+    //         AnchorPoint::BottomLeft => todo!(),
+    //         AnchorPoint::BottomCenter => todo!(),
+    //         AnchorPoint::BottomRight => todo!(),
+    //     };
+    //     let other_left
+    // }
+}
+
+fn tuple_to_vec2(tuple: (f32, f32)) -> Vec2 {
+    Vec2::new(tuple.0, tuple.1)
+}
+
+fn vec2_to_tuple(vec2: Vec2) -> (f32, f32) {
+    (vec2.x, vec2.y)
+}
+
+struct UiBox {
+    width: f32,
+    height: f32,
+    background: Image,
+    anchors: AnchorSettings,
+}
+
+// TODO: reconsider UiBox. May need to work purely with Rects, scaling to fit.
+// Consider 9 rects to make up a nine-slice rather than aiming for adjusting UVs.
+impl UiBox {
+    fn new(width: f32, height: f32, background: Image, anchors: AnchorSettings) -> UiBox {
+        UiBox {
+            width,
+            height,
+            background,
+            anchors,
+        }
+    }
+
+    fn update_anchors(&mut self, new_anchors: AnchorSettings) {
+        self.anchors = new_anchors;
+    }
+
+    fn get_scalar_vec2(&self) -> Vec2 {
+        let (screen_width, screen_height) = (self.width, self.height);
+        let (image_width, image_height) = (self.background.width(), self.background.height());
+        let scalar = Vec2::new(
+            screen_width / image_width as f32,
+            screen_height / image_height as f32,
+        );
+        scalar
+    }
+
+    fn offset_by_anchors(&mut self) {
+        todo!();
+    }
+}
+
+// TODO: is this wise? or should I just always pass in UiBox.background?
+impl Drawable for UiBox {
+    fn draw(&self, canvas: &mut graphics::Canvas, param: impl Into<DrawParam>) {
+        let draw_param: DrawParam = param.into();
+        // println!("Before: {:#?}", draw_param);
+        let draw_param = draw_param.scale(self.get_scalar_vec2());
+        // println!("After: {:#?}", draw_param);
+
+        self.background.draw(canvas, draw_param);
+    }
+
+    fn dimensions(
+        &self,
+        gfx: &impl ggez::context::Has<graphics::GraphicsContext>,
+    ) -> Option<graphics::Rect> {
+        let mut scaled_background = self
+            .background
+            .dimensions(gfx)
+            .unwrap_or_else(|| Rect::new_i32(0, 0, 0, 0));
+        // HACK: probably should do this another way
+        if !scaled_background.w.is_normal() || !scaled_background.h.is_normal() {
+            return None;
+        }
+        let scalar = self.get_scalar_vec2();
+        scaled_background.scale(scalar.x, scalar.y);
+        // let scaled_background = Rect::new(0.0, 0.0, 500.0, 500.0);
+        // println!("B: {}", self.get_scalar_vec2());
+
+        Some(scaled_background)
     }
 }
