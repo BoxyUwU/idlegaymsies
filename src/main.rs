@@ -3,7 +3,11 @@ use std::{env, path};
 use ggez::conf::WindowMode;
 use ggez::event::{self, EventHandler};
 use ggez::glam::Vec2;
-use ggez::graphics::{self, Color, DrawParam, Drawable, Image, ImageFormat, Rect, ScreenImage};
+use ggez::graphics::{
+    self, Color, DrawParam, Drawable, FillOptions, Image, ImageFormat, Mesh, MeshBuilder, Rect,
+    ScreenImage,
+};
+use ggez::mint;
 use ggez::{glam, Context, ContextBuilder, GameResult};
 
 fn main() {
@@ -101,12 +105,13 @@ impl EventHandler for MainMenuState {
         // ); // TODO: Figure out why this doesn't work
 
         let (screen_width, screen_height) = ctx.gfx.drawable_size();
-        let ui_box = UiBox::new(
-            screen_width,
-            screen_height,
-            self.assets.menu_bg.clone(), // TODO: is this clone wise?
-            AnchorSettings::new().stretch_full(),
-        );
+        // let ui_box = UiBox::new(
+        //     screen_width,
+        //     screen_height,
+        //     self.assets.menu_bg.clone(), // TODO: is this clone wise?
+        //     AnchorSettings::new().stretch_full(),
+        // );
+
         // let (image_width, image_height) =
         //     (self.assets.menu_bg.width(), self.assets.menu_bg.height());
         // let scalar = Vec2::new(
@@ -122,7 +127,11 @@ impl EventHandler for MainMenuState {
         //     graphics::DrawParam::new().scale(scalar),
         // );
 
-        canvas.draw(&ui_box, DrawParam::new());
+        // canvas.draw(&ui_box, DrawParam::new());
+
+        let button = Button::new(0.0, 0.0, &self.assets.menu_bg);
+        canvas.draw(&button.image, DrawParam::new());
+        button.check_if_clicked(ctx);
 
         canvas.finish(ctx)
 
@@ -409,5 +418,153 @@ impl Drawable for UiBox {
         // println!("B: {}", self.get_scalar_vec2());
 
         Some(scaled_background)
+    }
+}
+
+#[derive(Clone)]
+struct NewUiBox {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    image: Image,
+    mesh: Mesh,
+}
+
+impl NewUiBox {
+    fn new(ctx: &mut Context, x: f32, y: f32, width: f32, height: f32, image: Image) -> NewUiBox {
+        NewUiBox {
+            x,
+            y,
+            width,
+            height,
+            image,
+            mesh: Mesh::new_rectangle(
+                &ctx.gfx,
+                graphics::DrawMode::Fill(FillOptions::tolerance(0.0)), // TODO: what do the FillOptions do?
+                Rect::new(x, y, width, height),
+                Color::from_rgb(255, 50, 200),
+            )
+            .unwrap(),
+        }
+    }
+
+    fn set_size(&mut self, width: f32, height: f32) {
+        self.width = width;
+        self.height = height;
+    }
+
+    fn update_image_size(&mut self) {
+        let new_image = self.image.clone();
+    }
+}
+
+trait Clickable {
+    fn check_if_clicked(&self, ctx: &mut Context) {
+        if ctx.mouse.button_just_released(event::MouseButton::Left) {
+            if is_mouse_in_rect(ctx, self.get_area()) {
+                self.on_just_released(ctx);
+            }
+        }
+        if ctx.mouse.button_just_pressed(event::MouseButton::Left) {
+            if is_mouse_in_rect(ctx, self.get_area()) {
+                self.on_just_pressed(ctx);
+            }
+        }
+        if ctx.mouse.button_pressed(event::MouseButton::Left) {
+            if is_mouse_in_rect(ctx, self.get_area()) {
+                self.on_pressed(ctx);
+            }
+        }
+    }
+
+    fn get_area(&self) -> Rect;
+
+    fn on_pressed(&self, ctx: &mut Context) {
+        ()
+    }
+
+    fn on_just_pressed(&self, ctx: &mut Context) {
+        ()
+    }
+
+    fn on_just_released(&self, ctx: &mut Context) {
+        ()
+    }
+}
+
+fn is_mouse_in_rect(ctx: &Context, area: Rect) -> bool {
+    is_point_in_rect(area, ctx.mouse.position().into())
+}
+
+fn is_point_in_rect(area: Rect, point: Vec2) -> bool {
+    let bounds = RectBounds::from_rect(area);
+
+    if point.x >= bounds.left_bound
+        && point.x <= bounds.right_bound
+        && point.y >= bounds.top_bound
+        && point.y <= bounds.bottom_bound
+    {
+        return true;
+    }
+    false
+}
+struct RectBounds {
+    top_bound: f32,
+    bottom_bound: f32,
+    left_bound: f32,
+    right_bound: f32,
+}
+
+impl RectBounds {
+    fn new(top_bound: f32, bottom_bound: f32, left_bound: f32, right_bound: f32) -> RectBounds {
+        RectBounds {
+            top_bound,
+            bottom_bound,
+            left_bound,
+            right_bound,
+        }
+    }
+
+    fn from_rect(rect: Rect) -> RectBounds {
+        RectBounds {
+            top_bound: rect.y,
+            bottom_bound: rect.y + rect.h,
+            left_bound: rect.x,
+            right_bound: rect.x + rect.w,
+        }
+    }
+}
+
+struct Button {
+    x: f32,
+    y: f32,
+    image: Image,
+}
+
+impl Button {
+    fn new(x: f32, y: f32, image: &Image) -> Button {
+        Button {
+            x,
+            y,
+            image: image.clone(),
+        }
+    }
+
+    fn draw(&self, ctx: &mut Context) {}
+}
+
+impl Clickable for Button {
+    fn get_area(&self) -> Rect {
+        Rect::new(
+            self.x,
+            self.y,
+            self.image.width() as f32,
+            self.image.height() as f32,
+        )
+    }
+
+    fn on_just_pressed(&self, ctx: &mut Context) {
+        println!("Button clicked!");
     }
 }
