@@ -27,9 +27,9 @@ fn main() {
         .window_mode(WindowMode {
             // Uncomment w/h and set maximized to false for consistent testing
             // See https://docs.rs/ggez/latest/ggez/conf/struct.WindowMode.html
-            // width: 1280.0,
-            // height: 720.0,
-            maximized: true,
+            width: 1280.0,
+            height: 720.0,
+            // maximized: true,
             resizable: true,
             ..Default::default()
         })
@@ -129,8 +129,24 @@ impl EventHandler for MainMenuState {
 
         // canvas.draw(&ui_box, DrawParam::new());
 
-        let button = Button::new(0.0, 0.0, &self.assets.menu_bg);
-        canvas.draw(&button.image, DrawParam::new());
+        let mut button = Button::new(0.0, 0.0, &self.assets.menu_bg);
+        let anchor = AnchorPoint::TopLeft;
+        let scalar = Button::scale_image_to_screen(
+            ctx,
+            anchor,
+            500.0,
+            500.0,
+            &button.image,
+            screen_width,
+            screen_height,
+            640.0,
+            360.0,
+        );
+        // println!("{}", scalar);
+        button.scalar = scalar;
+
+        canvas.draw(&button.image, DrawParam::new().scale(scalar));
+
         button.check_if_clicked(ctx);
 
         canvas.finish(ctx)
@@ -459,6 +475,31 @@ impl NewUiBox {
     }
 }
 
+trait StretchableImage {
+    fn get_scalar(&self) -> Vec2;
+
+    fn scale_image_to_screen(
+        ctx: &mut Context,
+        anchor: AnchorPoint,
+        x: f32,
+        y: f32,
+        image: &Image,
+        screen_width: f32,
+        screen_height: f32,
+        reference_screen_width: f32,
+        reference_screen_height: f32,
+    ) -> Vec2 {
+        let (anchor_offset_width, anchor_offset_height) = anchor.to_tuple_pixels(ctx);
+        let x = x + anchor_offset_width;
+        let y = y + anchor_offset_height;
+
+        let scale_width = screen_width / reference_screen_width;
+        let scale_height = screen_height / reference_screen_height;
+
+        Vec2::new(scale_width, scale_height)
+    }
+}
+
 trait Clickable {
     fn check_if_clicked(&self, ctx: &mut Context) {
         if ctx.mouse.button_just_released(event::MouseButton::Left) {
@@ -540,6 +581,7 @@ struct Button {
     x: f32,
     y: f32,
     image: Image,
+    scalar: Vec2,
 }
 
 impl Button {
@@ -548,6 +590,7 @@ impl Button {
             x,
             y,
             image: image.clone(),
+            scalar: Vec2::new(0.0, 0.0),
         }
     }
 
@@ -559,12 +602,18 @@ impl Clickable for Button {
         Rect::new(
             self.x,
             self.y,
-            self.image.width() as f32,
-            self.image.height() as f32,
+            self.image.width() as f32 * self.scalar.x,
+            self.image.height() as f32 * self.scalar.y,
         )
     }
 
     fn on_just_pressed(&self, ctx: &mut Context) {
         println!("Button clicked!");
+    }
+}
+
+impl StretchableImage for Button {
+    fn get_scalar(&self) -> Vec2 {
+        self.scalar
     }
 }
