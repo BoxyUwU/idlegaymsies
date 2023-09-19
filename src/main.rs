@@ -2,6 +2,9 @@ use ggez::event::{self, EventHandler};
 use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawParam, Quad};
 use ggez::{conf, Context, ContextBuilder, GameResult};
+use physics::{PhysicsWorld, Polygon2D};
+
+mod physics;
 
 fn main() {
     // Make a Context.
@@ -27,20 +30,41 @@ fn main() {
 }
 
 struct MyGame {
+    physics: PhysicsWorld,
+
     player: Player,
 }
 
 struct Player {
-    pos: Vec2,
+    id: usize,
 }
 
 impl MyGame {
     pub fn new(_ctx: &mut Context) -> MyGame {
         // Load/create resources such as images here.
+        let mut physics = PhysicsWorld::new();
+        let id = physics.new_entity(
+            Vec2::new(100., 100.),
+            Polygon2D::new([
+                Vec2::new(-16., 16.),
+                Vec2::new(-16., -16.),
+                Vec2::new(16., -16.),
+                Vec2::new(16., 16.),
+            ]),
+        );
+
+        let big_square = Polygon2D::new([
+            Vec2::new(-32., 32.),
+            Vec2::new(-32., -32.),
+            Vec2::new(32., -32.),
+            Vec2::new(32., 32.),
+        ]);
+        physics.new_entity(Vec2::new(200., 200.), big_square.clone());
+        physics.new_entity(Vec2::new(300., 40.), big_square.clone());
+
         MyGame {
-            player: Player {
-                pos: Vec2::new(100., 100.),
-            },
+            physics,
+            player: Player { id },
         }
     }
 }
@@ -62,7 +86,7 @@ impl EventHandler for MyGame {
         }
         let movement = movement.normalize_or_zero() * 10.0;
 
-        self.player.pos += movement;
+        self.physics.move_entity_by(self.player.id, movement);
 
         // Update code here...
         Ok(())
@@ -75,7 +99,7 @@ impl EventHandler for MyGame {
             &Quad,
             DrawParam::new()
                 .color(Color::RED)
-                .dest(self.player.pos)
+                .dest(self.physics.position(self.player.id))
                 .scale(Vec2::new(32., 32.)),
         );
 
