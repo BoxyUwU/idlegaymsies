@@ -10,6 +10,13 @@ use ggez::graphics::{
 use ggez::mint;
 use ggez::{glam, Context, ContextBuilder, GameResult};
 
+// These are in floating point pixels. idk why, that's how ggez does it, so this means minimal conversion needed.
+const REFERENCE_SCREEN_WIDTH: f32 = 1920.0;
+const REFERENCE_SCREEN_HEIGHT: f32 = 1080.0;
+
+const DEFAULT_SCREEN_WIDTH: f32 = 1280.0;
+const DEFAULT_SCREEN_HEIGHT: f32 = 720.0;
+
 fn main() {
     // Resource
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
@@ -27,8 +34,8 @@ fn main() {
         .window_mode(WindowMode {
             // Uncomment w/h and set maximized to false for consistent testing
             // See https://docs.rs/ggez/latest/ggez/conf/struct.WindowMode.html
-            width: 1280.0,
-            height: 720.0,
+            width: DEFAULT_SCREEN_WIDTH,
+            height: DEFAULT_SCREEN_HEIGHT,
             // maximized: true,
             resizable: true,
             ..Default::default()
@@ -104,7 +111,6 @@ impl EventHandler for MainMenuState {
         //     Some(Color::WHITE),
         // ); // TODO: Figure out why this doesn't work
 
-        let (screen_width, screen_height) = ctx.gfx.drawable_size();
         // let ui_box = UiBox::new(
         //     screen_width,
         //     screen_height,
@@ -129,6 +135,7 @@ impl EventHandler for MainMenuState {
 
         // canvas.draw(&ui_box, DrawParam::new());
 
+        let (screen_width, screen_height) = ctx.gfx.drawable_size();
         let mut button = Button::new(0.0, 0.0, &self.assets.menu_bg);
         let anchor = AnchorPoint::TopLeft;
         let scalar = Button::scale_image_to_screen(
@@ -139,8 +146,8 @@ impl EventHandler for MainMenuState {
             &button.image,
             screen_width,
             screen_height,
-            640.0,
-            360.0,
+            REFERENCE_SCREEN_WIDTH,
+            REFERENCE_SCREEN_HEIGHT,
         );
         // println!("{}", scalar);
         button.scalar = scalar;
