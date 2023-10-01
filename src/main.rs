@@ -1,6 +1,6 @@
 use ggez::event::{self, EventHandler};
 use ggez::glam::Vec2;
-use ggez::graphics::{self, Color, DrawParam, Quad};
+use ggez::graphics::{self, Color, DrawMode, DrawParam, FillOptions, Mesh, Quad};
 use ggez::{conf, Context, ContextBuilder, GameResult};
 use physics::{PhysicsWorld, Polygon2D};
 
@@ -32,7 +32,13 @@ fn main() {
 struct MyGame {
     physics: PhysicsWorld,
 
+    walls: Vec<Wall>,
     player: Player,
+}
+
+struct Wall {
+    mesh: Mesh,
+    id: usize,
 }
 
 struct Player {
@@ -40,18 +46,9 @@ struct Player {
 }
 
 impl MyGame {
-    pub fn new(_ctx: &mut Context) -> MyGame {
+    pub fn new(ctx: &mut Context) -> MyGame {
         // Load/create resources such as images here.
         let mut physics = PhysicsWorld::new();
-        let id = physics.new_entity(
-            Vec2::new(100., 100.),
-            Polygon2D::new([
-                Vec2::new(-16., 16.),
-                Vec2::new(-16., -16.),
-                Vec2::new(16., -16.),
-                Vec2::new(16., 16.),
-            ]),
-        );
 
         let big_square = Polygon2D::new([
             Vec2::new(-32., 32.),
@@ -59,12 +56,43 @@ impl MyGame {
             Vec2::new(32., -32.),
             Vec2::new(32., 32.),
         ]);
-        physics.new_entity(Vec2::new(200., 200.), big_square.clone());
-        physics.new_entity(Vec2::new(300., 40.), big_square.clone());
 
+        let mut walls = vec![];
+
+        let wall_mesh = {
+            Mesh::new_polygon(
+                ctx,
+                DrawMode::Fill(FillOptions::DEFAULT),
+                big_square.verts.as_slice(),
+                Color::WHITE,
+            )
+            .unwrap()
+        };
+
+        let id = physics.new_entity(Vec2::new(200., 200.), big_square.clone());
+        walls.push(Wall {
+            id,
+            mesh: wall_mesh.clone(),
+        });
+        let id = physics.new_entity(Vec2::new(300., 40.), big_square.clone());
+        walls.push(Wall {
+            id,
+            mesh: wall_mesh,
+        });
+
+        let player = physics.new_entity(
+            Vec2::new(100., 100.),
+            Polygon2D::new([
+                Vec2::new(0., 32.),
+                Vec2::new(0., 0.),
+                Vec2::new(32., 0.),
+                Vec2::new(32., 32.),
+            ]),
+        );
         MyGame {
             physics,
-            player: Player { id },
+            walls,
+            player: Player { id: player },
         }
     }
 }
@@ -102,6 +130,16 @@ impl EventHandler for MyGame {
                 .dest(self.physics.position(self.player.id))
                 .scale(Vec2::new(32., 32.)),
         );
+
+        for wall in &self.walls {
+            let pos = self.physics.position(wall.id);
+            canvas.draw(
+                &wall.mesh,
+                DrawParam::new()
+                    .dest(pos)
+                    .color(Color::new(0.7, 0.7, 0.7, 1.0)),
+            );
+        }
 
         // Draw code here...
         canvas.finish(ctx)
