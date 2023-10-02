@@ -28,6 +28,20 @@ impl Polygon2D {
 
         Polygon2D { verts, normals }
     }
+
+    pub fn new_line(start: Vec2, end: Vec2, thickness: f32) -> Polygon2D {
+        let start_to_end = (end - start)
+            .try_normalize()
+            .expect("lines are generally not points");
+
+        let p1 = (-start_to_end + Vec2::new(-start_to_end.y, start_to_end.x)) * thickness + start;
+        let p2 = (-start_to_end + Vec2::new(start_to_end.y, -start_to_end.x)) * thickness + start;
+
+        let p3 = (start_to_end + Vec2::new(start_to_end.y, -start_to_end.x)) * thickness + end;
+        let p4 = (start_to_end + Vec2::new(-start_to_end.y, start_to_end.x)) * thickness + end;
+
+        Polygon2D::new([p1, p2, p3, p4])
+    }
 }
 
 pub struct PhysicsWorld {
@@ -57,12 +71,13 @@ impl PhysicsWorld {
     }
 
     pub fn move_entity_to(&mut self, entity: usize, p1: Vec2) {
-        self.positions[entity] = p1;
         let c1 = &self.colliders[entity];
 
         let collision = check_entity(p1, c1, entity, &self.positions, &self.colliders);
-        if let Some(mtv) = collision {
-            self.positions[entity] += mtv;
+        match collision {
+            CollisionResult::NoCollision => self.positions[entity] = p1,
+            CollisionResult::Ya(mtv) => self.positions[entity] = p1 + mtv,
+            CollisionResult::Reset => (),
         }
     }
 
@@ -72,27 +87,50 @@ impl PhysicsWorld {
     }
 }
 
+enum CollisionResult {
+    NoCollision,
+    Ya(Vec2),
+    Reset,
+}
 fn check_entity(
-    p1: Vec2,
+    mut p1: Vec2,
     c1: &Polygon2D,
     skip: usize,
     positions: &[Vec2],
     colliders: &[Polygon2D],
-) -> Option<Vec2> {
-    for (n, c2) in colliders.iter().enumerate() {
-        if n == skip {
-            continue;
+) -> CollisionResult {
+    let orig_p1 = p1;
+
+    let mut recheck_collisions = true;
+    let mut iterations = 0;
+    'outer: while recheck_collisions {
+        recheck_collisions = false;
+
+        if iterations >= 5 {
+            return CollisionResult::Reset;
         }
+        iterations += 1;
 
-        let p2 = positions[n];
+        for (n, c2) in colliders.iter().enumerate() {
+            if n == skip {
+                continue;
+            }
 
-        if let Some(collision) = check_pair(p1, c1, p2, c2) {
-            // FIXME: this only handles ONE collision but there could be infinitely many, especially after applying the resulting mtv
-            return Some(collision);
+            let p2 = positions[n];
+
+            if let Some(collision) = check_pair(p1, c1, p2, c2) {
+                p1 += collision;
+                recheck_collisions = true;
+                continue 'outer;
+            }
         }
     }
 
-    None
+    if orig_p1 == p1 {
+        CollisionResult::NoCollision
+    } else {
+        CollisionResult::Ya(p1 - orig_p1)
+    }
 }
 
 fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2> {

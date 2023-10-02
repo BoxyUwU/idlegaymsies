@@ -15,6 +15,8 @@ fn main() {
         })
         .window_mode(conf::WindowMode {
             resizable: true,
+            width: 800.,
+            height: 800.,
             ..Default::default()
         })
         .build()
@@ -59,26 +61,58 @@ impl MyGame {
 
         let mut walls = vec![];
 
-        let wall_mesh = {
+        let mesh_from_poly = |poly: &Polygon2D| {
             Mesh::new_polygon(
                 ctx,
                 DrawMode::Fill(FillOptions::DEFAULT),
-                big_square.verts.as_slice(),
+                poly.verts.as_slice(),
                 Color::WHITE,
             )
             .unwrap()
         };
+
+        let wall_mesh = mesh_from_poly(&big_square);
 
         let id = physics.new_entity(Vec2::new(200., 200.), big_square.clone());
         walls.push(Wall {
             id,
             mesh: wall_mesh.clone(),
         });
-        let id = physics.new_entity(Vec2::new(300., 40.), big_square.clone());
+        let id = physics.new_entity(Vec2::new(500., 150.), big_square.clone());
         walls.push(Wall {
             id,
             mesh: wall_mesh,
         });
+
+        //
+
+        let mut new_wall = |start, end, pos| {
+            let wall_col = Polygon2D::new_line(start, end, 8.);
+            let wall_mesh = mesh_from_poly(&wall_col);
+            let id = physics.new_entity(pos, wall_col);
+            walls.push(Wall {
+                id,
+                mesh: wall_mesh,
+            });
+        };
+
+        let room_size = 800.;
+
+        new_wall(Vec2::ZERO, Vec2::new(room_size, 0.0), Vec2::ZERO);
+        new_wall(
+            Vec2::ZERO,
+            Vec2::new(room_size, 0.0),
+            Vec2::new(0.0, room_size),
+        );
+
+        new_wall(Vec2::ZERO, Vec2::new(0.0, room_size), Vec2::ZERO);
+        new_wall(
+            Vec2::ZERO,
+            Vec2::new(0.0, room_size),
+            Vec2::new(room_size, 0.0),
+        );
+
+        //
 
         let player = physics.new_entity(
             Vec2::new(100., 100.),
