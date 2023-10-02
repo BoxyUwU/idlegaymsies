@@ -36,6 +36,8 @@ struct MyGame {
 
     walls: Vec<Wall>,
     player: Player,
+
+    camera_pos: Vec2,
 }
 
 struct Wall {
@@ -127,6 +129,8 @@ impl MyGame {
             physics,
             walls,
             player: Player { id: player },
+
+            camera_pos: Vec2::ZERO,
         }
     }
 }
@@ -150,18 +154,23 @@ impl EventHandler for MyGame {
 
         self.physics.move_entity_by(self.player.id, movement);
 
-        // Update code here...
+        self.camera_pos = self.physics.position(self.player.id);
+
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
 
+        let window_dim = ctx.gfx.window().inner_size();
+        let camera_pos =
+            self.camera_pos - (Vec2::new(window_dim.width as f32, window_dim.height as f32) / 2.);
+
         canvas.draw(
             &Quad,
             DrawParam::new()
                 .color(Color::RED)
-                .dest(self.physics.position(self.player.id))
+                .dest(self.physics.position(self.player.id) - camera_pos)
                 .scale(Vec2::new(32., 32.)),
         );
 
@@ -170,7 +179,7 @@ impl EventHandler for MyGame {
             canvas.draw(
                 &wall.mesh,
                 DrawParam::new()
-                    .dest(pos)
+                    .dest(pos - camera_pos)
                     .color(Color::new(0.7, 0.7, 0.7, 1.0)),
             );
         }
