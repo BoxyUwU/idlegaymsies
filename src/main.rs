@@ -136,25 +136,33 @@ impl EventHandler for MainMenuState {
         // canvas.draw(&ui_box, DrawParam::new());
 
         let (screen_width, screen_height) = ctx.gfx.drawable_size();
-        let mut button = Button::new(0.0, 0.0, &self.assets.menu_bg);
-        let anchor = AnchorPoint::TopLeft;
-        let scalar = Button::scale_image_to_screen(
+        let anchors = get_set_of_all_anchor_points(AnchorPoint::TopLeft);
+        let anchors2 = get_set_of_all_anchor_points(AnchorPoint::TopRight);
+        let mut button = Button::new(0.0, 0.0, &self.assets.menu_bg, anchors);
+        let mut button2 = Button::new(300.0, 300.0, &self.assets.menu_bg, anchors2);
+        button.update_image_scale(
             ctx,
-            anchor,
-            500.0,
-            500.0,
-            &button.image,
             screen_width,
             screen_height,
             REFERENCE_SCREEN_WIDTH,
             REFERENCE_SCREEN_HEIGHT,
         );
-        // println!("{}", scalar);
-        button.scalar = scalar;
+        button2.update_image_scale(
+            ctx,
+            screen_width,
+            screen_height,
+            REFERENCE_SCREEN_WIDTH,
+            REFERENCE_SCREEN_HEIGHT,
+        );
 
-        canvas.draw(&button.image, DrawParam::new().scale(scalar));
+        canvas.draw(&button.image, DrawParam::new().scale(button.scalar));
+        canvas.draw(&button2.image, DrawParam::new().scale(button2.scalar));
 
         button.check_if_clicked(ctx);
+        button2.check_if_clicked(ctx);
+
+        // let test_image = self.assets.menu_bg.clone();
+        // canvas.draw(&test_image, DrawParam::new());
 
         canvas.finish(ctx)
 
@@ -183,6 +191,7 @@ impl EventHandler for MainMenuState {
 //     BottomRight,
 // }
 
+#[derive(Copy, Clone)]
 struct AnchorSettings {
     top_left: AnchorPoint,
     top_right: AnchorPoint,
@@ -286,20 +295,6 @@ impl AnchorSettings {
     }
 }
 
-// fn rectify_corner_overlap(
-//     top_left: (f32, f32),
-//     top_right: (f32, f32),
-//     bottom_left: (f32, f32),
-//     bottom_right: (f32, f32),
-// ) -> ((f32, f32), (f32, f32), (f32, f32), (f32, f32)) {
-//     // check left
-//     if top_right.0 < top_left.0
-//     // check right
-//     // check top
-//     // if bottom_left.1 > top_left.1
-//     // check bottom
-// }
-
 #[derive(Copy, Clone)]
 enum AnchorPoint {
     None,
@@ -347,23 +342,6 @@ impl AnchorPoint {
         let tuple = self.to_tuple_pixels(ctx);
         tuple_to_vec2(tuple)
     }
-
-    // fn is_left_of(&self, other: AnchorPoint) -> bool {
-    //     let self_right = match &self {
-    //         AnchorPoint::None => return false,
-    //         AnchorPoint::Custom(x, _) => x,
-    //         AnchorPoint::TopLeft => todo!(),
-    //         AnchorPoint::TopCenter => todo!(),
-    //         AnchorPoint::TopRight => todo!(),
-    //         AnchorPoint::CenterLeft => todo!(),
-    //         AnchorPoint::CenterCenter => todo!(),
-    //         AnchorPoint::CenterRight => todo!(),
-    //         AnchorPoint::BottomLeft => todo!(),
-    //         AnchorPoint::BottomCenter => todo!(),
-    //         AnchorPoint::BottomRight => todo!(),
-    //     };
-    //     let other_left
-    // }
 }
 
 fn tuple_to_vec2(tuple: (f32, f32)) -> Vec2 {
@@ -374,6 +352,15 @@ fn vec2_to_tuple(vec2: Vec2) -> (f32, f32) {
     (vec2.x, vec2.y)
 }
 
+fn get_set_of_all_anchor_points(anchor_point: AnchorPoint) -> AnchorSettings {
+    AnchorSettings {
+        top_left: anchor_point,
+        top_right: anchor_point,
+        bottom_left: anchor_point,
+        bottom_right: anchor_point,
+    }
+}
+
 struct UiBox {
     width: f32,
     height: f32,
@@ -382,28 +369,66 @@ struct UiBox {
 }
 
 trait StretchableImage {
+    fn get_original_size(&self) -> Vec2;
+
+    fn get_current_size(&self) -> Vec2;
+
+    fn set_current_size(&mut self, ctx: &mut Context, size: Vec2);
+
     fn get_scalar(&self) -> Vec2;
 
-    fn scale_image_to_screen(
+    fn set_scalar(&mut self, scalar: Vec2);
+
+    fn get_position(&self) -> Vec2;
+
+    fn get_anchor_settings(&self) -> AnchorSettings;
+
+    fn get_image(&self) -> &Image;
+
+    fn set_image(&mut self, ctx: &mut Context, image: Image);
+
+    fn update_image_scale(
+        &mut self,
         ctx: &mut Context,
-        anchor: AnchorPoint,
-        x: f32,
-        y: f32,
-        image: &Image,
         screen_width: f32,
         screen_height: f32,
         reference_screen_width: f32,
         reference_screen_height: f32,
-    ) -> Vec2 {
+    ) {
+        let anchor = self.get_anchor_settings().top_left;
         let (anchor_offset_width, anchor_offset_height) = anchor.to_tuple_pixels(ctx);
+
+        let (x, y) = vec2_to_tuple(self.get_position());
+
         let x = x + anchor_offset_width;
         let y = y + anchor_offset_height;
 
         let scale_width = screen_width / reference_screen_width;
         let scale_height = screen_height / reference_screen_height;
 
-        Vec2::new(scale_width, scale_height)
+        let (width, height) = vec2_to_tuple(self.get_original_size());
+
+        self.set_scalar(Vec2::new(scale_width, scale_height));
+
+        let new_image = get_image_at_new_size(ctx, self.get_image(), width, height);
+
+        self.set_image(ctx, new_image);
     }
+}
+
+fn get_image_at_new_size(
+    ctx: &mut Context,
+    old_image: &Image,
+    new_width: f32,
+    new_height: f32,
+) -> Image {
+    Image::new_canvas_image(
+        &ctx.gfx,
+        old_image.format(),
+        new_width as u32,
+        new_height as u32,
+        old_image.samples(),
+    )
 }
 
 trait Clickable {
@@ -486,17 +511,27 @@ impl RectBounds {
 struct Button {
     x: f32,
     y: f32,
+    original_x: f32,
+    original_y: f32,
+    original_width: f32,
+    original_height: f32,
     image: Image,
     scalar: Vec2,
+    anchor_settings: AnchorSettings,
 }
 
 impl Button {
-    fn new(x: f32, y: f32, image: &Image) -> Button {
+    fn new(x: f32, y: f32, image: &Image, anchor_settings: AnchorSettings) -> Button {
         Button {
             x,
             y,
+            original_x: x,
+            original_y: y,
+            original_width: image.width() as f32,
+            original_height: image.height() as f32,
             image: image.clone(),
-            scalar: Vec2::new(0.0, 0.0),
+            scalar: Vec2::new(1.0, 1.0),
+            anchor_settings,
         }
     }
 
@@ -515,11 +550,44 @@ impl Clickable for Button {
 
     fn on_just_pressed(&self, ctx: &mut Context) {
         println!("Button clicked!");
+        println!("Clicked at: {}", self.get_position().to_string());
     }
 }
 
 impl StretchableImage for Button {
     fn get_scalar(&self) -> Vec2 {
         self.scalar
+    }
+
+    fn get_position(&self) -> Vec2 {
+        Vec2::new(self.x, self.y)
+    }
+
+    fn get_anchor_settings(&self) -> AnchorSettings {
+        self.anchor_settings
+    }
+
+    fn get_image(&self) -> &Image {
+        &self.image
+    }
+
+    fn get_original_size(&self) -> Vec2 {
+        Vec2::new(self.original_width, self.original_height)
+    }
+
+    fn get_current_size(&self) -> Vec2 {
+        Vec2::new(self.image.width() as f32, self.image.height() as f32)
+    }
+
+    fn set_current_size(&mut self, ctx: &mut Context, size: Vec2) {
+        self.image = get_image_at_new_size(ctx, &self.image, size.x, size.y);
+    }
+
+    fn set_scalar(&mut self, scalar: Vec2) {
+        self.scalar = scalar;
+    }
+
+    fn set_image(&mut self, ctx: &mut Context, image: Image) {
+        self.image = image;
     }
 }
