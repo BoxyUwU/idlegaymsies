@@ -109,9 +109,40 @@ impl EventHandler for MainMenuState {
             REFERENCE_SCREEN_HEIGHT,
         );
 
-        canvas.draw(&button.image, DrawParam::new().scale(button.scalar));
+        let draw_param = DrawParam::default()
+            // .dest(Vec2::new(button.x, button.y))
+            .dest(Vec2::new(0.0, 0.0))
+            .scale(Vec2::new(1.0, 1.0));
+        canvas.draw(&button.image, DrawParam::default());
+
+        let drawable = graphics::Image::from_path(&ctx.gfx, "/kenney_ui/glassPanel.png").unwrap();
+        // println!("{:#?}", &button.image);
+        // println!("{:#?}", &drawable);
+        // println!("{:#?}", draw_param);
+        // println!("{:#?}", DrawParam::default().dest(Vec2::new(100.0, 50.0)));
 
         button.check_if_clicked(ctx);
+
+        // BUG: Button images don't display
+
+        println!("Drawable");
+        println!("{:#?}", &drawable.width());
+        println!("{:#?}", &drawable.height());
+        println!("{:#?}", &drawable.format());
+        println!("{:#?}", &drawable.samples());
+        println!("{:#?}", &drawable.dimensions(&ctx.gfx));
+
+        println!("Button");
+        println!("{:#?}", &button.image.width());
+        println!("{:#?}", &button.image.height());
+        println!("{:#?}", &button.image.format());
+        println!("{:#?}", &button.image.samples());
+        println!("{:#?}", &button.image.dimensions(&ctx.gfx));
+
+        canvas.draw(
+            &button.image,
+            DrawParam::default().dest(Vec2::new(100.0, 50.0)),
+        );
 
         canvas.finish(ctx)
     }
@@ -314,9 +345,7 @@ trait StretchableImage {
 
         self.set_scalar(Vec2::new(scale_width, scale_height));
 
-        let new_image = get_image_at_new_size(ctx, self.get_image(), width, height);
-
-        self.set_image(ctx, new_image);
+        self.set_current_size(ctx, Vec2::new(width, height));
     }
 }
 
