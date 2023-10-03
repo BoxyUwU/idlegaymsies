@@ -97,57 +97,11 @@ impl EventHandler for MainMenuState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::WHITE);
-        // let mut canvas =
-        // graphics::Canvas::from_screen_image(ctx, &self.assets.menu_bg, Color::WHITE);
-        // let mut canvas = graphics::Canvas::from_image(
-        //     &ctx.gfx,
-        //     graphics::Image::new_canvas_image(
-        //         &ctx.gfx,
-        //         ctx.gfx.surface_format(),
-        //         ctx.gfx.frame().width(),
-        //         ctx.gfx.frame().height(),
-        //         1,
-        //     ),
-        //     Some(Color::WHITE),
-        // ); // TODO: Figure out why this doesn't work
-
-        // let ui_box = UiBox::new(
-        //     screen_width,
-        //     screen_height,
-        //     self.assets.menu_bg.clone(), // TODO: is this clone wise?
-        //     AnchorSettings::new().stretch_full(),
-        // );
-
-        // let (image_width, image_height) =
-        //     (self.assets.menu_bg.width(), self.assets.menu_bg.height());
-        // let scalar = Vec2::new(
-        //     screen_width / image_width as f32,
-        //     screen_height / image_height as f32,
-        // );
-
-        // let image1 = graphics::Image::from_path(ctx, "/kenney_ui/dotBlue.png")?;
-        // let dst = glam::Vec2::new(200.0, 200.0);
-        // canvas.draw(&image1, graphics::DrawParam::new().dest(dst));
-        // canvas.draw(
-        //     &self.assets.menu_bg,
-        //     graphics::DrawParam::new().scale(scalar),
-        // );
-
-        // canvas.draw(&ui_box, DrawParam::new());
 
         let (screen_width, screen_height) = ctx.gfx.drawable_size();
         let anchors = get_set_of_all_anchor_points(AnchorPoint::TopLeft);
-        let anchors2 = get_set_of_all_anchor_points(AnchorPoint::TopRight);
         let mut button = Button::new(0.0, 0.0, &self.assets.menu_bg, anchors);
-        let mut button2 = Button::new(300.0, 300.0, &self.assets.menu_bg, anchors2);
         button.update_image_scale(
-            ctx,
-            screen_width,
-            screen_height,
-            REFERENCE_SCREEN_WIDTH,
-            REFERENCE_SCREEN_HEIGHT,
-        );
-        button2.update_image_scale(
             ctx,
             screen_width,
             screen_height,
@@ -156,40 +110,12 @@ impl EventHandler for MainMenuState {
         );
 
         canvas.draw(&button.image, DrawParam::new().scale(button.scalar));
-        canvas.draw(&button2.image, DrawParam::new().scale(button2.scalar));
 
         button.check_if_clicked(ctx);
-        button2.check_if_clicked(ctx);
-
-        // let test_image = self.assets.menu_bg.clone();
-        // canvas.draw(&test_image, DrawParam::new());
 
         canvas.finish(ctx)
-
-        // let mut canvas = graphics::Canvas::from_screen_image(
-        //     &ctx.gfx,
-        //     ScreenImage::new(&ctx.gfx, None, 0.5, 0.5, 1),
-        //     Some(Color::WHITE),
-        // );
-        // let mut canvas = graphics::Canvas::from_image(
-        //     &ctx.gfx,
-        //     graphics::Image::new_canvas_image(&ctx.gfx, ctx.gfx.surface_format(), 200, 200, 1),
-        //     Some(Color::BLACK),
-        // );
-        // canvas.draw(
-        //     &image1,
-        //     graphics::DrawParam::new().dest(Vec2::new(300.0, 300.0)),
-        // );
-        // canvas.finish(ctx)
     }
 }
-
-// enum Corner {
-//     TopLeft,
-//     TopRight,
-//     BottomLeft,
-//     BottomRight,
-// }
 
 #[derive(Copy, Clone)]
 struct AnchorSettings {
@@ -217,28 +143,6 @@ impl AnchorSettings {
             bottom_right: AnchorPoint::None,
         }
     }
-
-    // fn set_top_left(&self, anchor: AnchorPoint) -> AnchorSettings {
-    //     let top_left = anchor;
-    //     let top_right = self.top_right;
-    //     let bottom_left = self.bottom_left;
-    //     let bottom_right = self.bottom_right;
-    //     AnchorSettings {
-    //         top_left,
-    //         top_right,
-    //         bottom_left,
-    //         bottom_right,
-    //     }
-    // }
-
-    // fn set_top_right(&self, anchor: AnchorPoint) -> AnchorSettings {
-    //     AnchorSettings {
-    //         top_left: self.top_left,
-    //         top_right: anchor,
-    //         bottom_left: self.bottom_left,
-    //         bottom_right: self.bottom_right,
-    //     }
-    // }
 
     fn set_all(&self, anchor: AnchorPoint) -> AnchorSettings {
         AnchorSettings {
