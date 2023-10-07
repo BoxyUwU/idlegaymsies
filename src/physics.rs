@@ -77,6 +77,7 @@ impl PhysicsWorld {
         match collision {
             CollisionResult::NoCollision => self.positions[entity] = p1,
             CollisionResult::Ya(mtv) => self.positions[entity] = p1 + mtv,
+            CollisionResult::Trigger(_) => todo!(),
             CollisionResult::Reset => (),
         }
     }
