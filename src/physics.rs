@@ -4,6 +4,7 @@ use ggez::glam::Vec2;
 pub struct Polygon2D {
     pub verts: Vec<Vec2>,
     pub normals: Vec<Vec2>,
+    pub is_trigger: bool,
 }
 
 impl Polygon2D {
@@ -26,7 +27,38 @@ impl Polygon2D {
             })
             .collect::<Vec<_>>();
 
-        Polygon2D { verts, normals }
+        Polygon2D {
+            verts,
+            normals,
+            is_trigger: false,
+        }
+    }
+
+    // TODO: deduplicate code - this is literally `new()` but with trigger creation because that has to be tracked somewhere
+    pub fn new_trigger(verts: impl IntoIterator<Item = Vec2>) -> Polygon2D {
+        let verts = verts.into_iter().collect::<Vec<_>>();
+        assert!(
+            verts.len() >= 3,
+            "polygon must consist of at least 3 vertices"
+        );
+
+        let normals = verts
+            .windows(2)
+            .map(|pair| [pair[0], pair[1]])
+            .chain([[*verts.first().unwrap(), *verts.last().unwrap()]])
+            .map(|[a, b]| {
+                let edge = a - b;
+                Vec2::new(-edge.y, edge.x)
+                    .try_normalize()
+                    .expect("failed to normalize normal")
+            })
+            .collect::<Vec<_>>();
+
+        Polygon2D {
+            verts,
+            normals,
+            is_trigger: true,
+        }
     }
 
     pub fn new_line(start: Vec2, end: Vec2, thickness: f32) -> Polygon2D {
@@ -262,6 +294,7 @@ pub trait Trigger {
         }
         false
     }
+
     /// Warning: do not call directly. To be implemented by the class with the trait.
     fn add_overlapping_entity(&self, other_entity: usize);
     /// Warning: do not call directly. To be implemented by the class with the trait.
