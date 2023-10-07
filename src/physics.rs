@@ -92,6 +92,10 @@ enum CollisionResult {
     Ya(Vec2),
     Reset,
 }
+
+/// Given a collider c1 moving to position p1, returns any collisions with other valid colliders moving to new positions.
+///
+/// skip: sets the entity to which c1 belongs, to skip over in calculations
 fn check_entity(
     mut p1: Vec2,
     c1: &Polygon2D,
@@ -133,9 +137,13 @@ fn check_entity(
     }
 }
 
+/// Finds the smallest overlapping vector between
 fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2> {
+    // The smallest overlapping vector between the two polygons
     let mut smallest_intersect = None;
 
+    // Collect the normals of both polygons, then iterate through the list
+    // This finds the smallest intersecting vector
     for &axis in c1.normals.iter().chain(c2.normals.iter()) {
         let calc_min_max = |position: Vec2, collider: &Polygon2D| {
             let (mut min, mut max) = {
@@ -213,5 +221,6 @@ fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2
         };
     }
 
+    // Returns the smallest intersection, or panics if no intersection was found
     Some(smallest_intersect.expect("no mtv generated even though intersection should have occured"))
 }
