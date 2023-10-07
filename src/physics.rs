@@ -249,16 +249,16 @@ fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2
 /// not already overlapping, then `on_trigger_enter` or `on_trigger_exit` will be called.
 pub trait Trigger {
     /// Call this when an entity overlaps with this trigger.
-    fn enter(&self, triggering_entity: usize) {
+    fn enter(&mut self, triggering_entity: usize) {
         if self.is_previously_overlapping(triggering_entity) {
             return;
         }
-        self.add_overlapping_entity(triggering_entity);
+        self.try_add_overlapping_entity(triggering_entity);
         self.on_trigger_enter(triggering_entity);
     }
 
     /// Call this when an entity does not overlap with this trigger.
-    fn exit(&self, triggering_entity: usize) {
+    fn exit(&mut self, triggering_entity: usize) {
         if !self.is_previously_overlapping(triggering_entity) {
             return;
         }
@@ -280,9 +280,9 @@ pub trait Trigger {
     }
 
     /// Warning: do not call directly. To be implemented by the class with the trait.
-    fn add_overlapping_entity(&self, other_entity: usize);
+    fn try_add_overlapping_entity(&mut self, other_entity: usize);
     /// Warning: do not call directly. To be implemented by the class with the trait.
-    fn try_remove_overlapping_entity(&self, other_entity: usize);
+    fn try_remove_overlapping_entity(&mut self, other_entity: usize);
 
     /// Warning: do not call directly. To be implemented by the class with the trait.
     ///
