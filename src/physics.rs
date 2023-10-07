@@ -93,7 +93,13 @@ impl PhysicsWorld {
         match collision {
             CollisionResult::NoCollision => self.positions[entity] = p1,
             CollisionResult::Ya(mtv) => self.positions[entity] = p1 + mtv,
-            CollisionResult::Trigger(_) => todo!(),
+            CollisionResult::Trigger(triggering_entities) => {
+                for e in triggering_entities {
+                    // (self as dyn Trigger).enter(e);
+                    // TODO: this entire plan probably doesn't work, since you can't check colliders and triggers at the same time under this plan
+                    todo!()
+                }
+            }
             CollisionResult::Reset => (),
         }
     }
@@ -107,7 +113,7 @@ impl PhysicsWorld {
 enum CollisionResult {
     NoCollision,
     Ya(Vec2),
-    Trigger(Vec2),
+    Trigger(Vec<usize>), // entity ids that the trigger is hitting
     Reset,
 }
 
@@ -122,6 +128,8 @@ fn check_entity(
     colliders: &[Polygon2D],
 ) -> CollisionResult {
     let orig_p1 = p1;
+
+    let mut triggering_entities = vec![];
 
     let mut recheck_collisions = true;
     let mut iterations = 0;
@@ -141,15 +149,21 @@ fn check_entity(
             let p2 = positions[n];
 
             if let Some(collision) = check_pair(p1, c1, p2, c2) {
-                p1 += collision;
-                recheck_collisions = true;
-                continue 'outer;
+                if c1.is_trigger {
+                    triggering_entities.push(n);
+                } else {
+                    p1 += collision;
+                    recheck_collisions = true;
+                    continue 'outer; // TODO: does this need to be outside the else?
+                }
             }
         }
     }
 
     if orig_p1 == p1 {
         CollisionResult::NoCollision
+    } else if c1.is_trigger {
+        CollisionResult::Trigger(triggering_entities)
     } else {
         CollisionResult::Ya(p1 - orig_p1)
     }

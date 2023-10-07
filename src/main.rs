@@ -35,6 +35,7 @@ struct MyGame {
     physics: PhysicsWorld,
 
     walls: Vec<Wall>,
+    triggers: Vec<TriggerZone>, // TODO: could this be done as `dyn Trigger` somehow?
     player: Player,
 
     camera_pos: Vec2,
@@ -103,6 +104,7 @@ impl MyGame {
         ]);
 
         let mut walls = vec![];
+        let mut trigger_zones = vec![];
 
         let mesh_from_poly = |poly: &Polygon2D| {
             Mesh::new_polygon(
@@ -127,12 +129,11 @@ impl MyGame {
             mesh: wall_mesh.clone(),
         });
         let id = physics.new_entity(Vec2::new(400., 400.), big_square.clone());
-        walls.push(Wall {
+        trigger_zones.push(TriggerZone {
             id,
             mesh: wall_mesh,
+            overlapping_entities: vec![],
         });
-
-        //
 
         let mut new_wall = |start, end, pos| {
             let wall_col = Polygon2D::new_line(start, end, 8.);
@@ -174,6 +175,7 @@ impl MyGame {
         MyGame {
             physics,
             walls,
+            triggers: trigger_zones,
             player: Player { id: player },
 
             camera_pos: Vec2::ZERO,
@@ -224,6 +226,16 @@ impl EventHandler for MyGame {
             let pos = self.physics.position(wall.id);
             canvas.draw(
                 &wall.mesh,
+                DrawParam::new()
+                    .dest(pos - camera_pos)
+                    .color(Color::new(0.7, 0.7, 0.7, 1.0)),
+            );
+        }
+
+        for trigger in &self.triggers {
+            let pos = self.physics.position(trigger.id);
+            canvas.draw(
+                &trigger.mesh,
                 DrawParam::new()
                     .dest(pos - camera_pos)
                     .color(Color::new(0.7, 0.7, 0.7, 1.0)),
