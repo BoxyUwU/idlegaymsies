@@ -2,7 +2,7 @@ use ggez::event::{self, EventHandler};
 use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawMode, DrawParam, FillOptions, Mesh, Quad};
 use ggez::{conf, Context, ContextBuilder, GameResult};
-use physics::{PhysicsWorld, Polygon2D};
+use physics::{PhysicsWorld, Polygon2D, Trigger};
 
 mod physics;
 
@@ -43,6 +43,47 @@ struct MyGame {
 struct Wall {
     mesh: Mesh,
     id: usize,
+}
+
+struct TriggerZone {
+    mesh: Mesh,
+    id: usize,
+    overlapping_entities: Vec<usize>,
+}
+
+impl Trigger for TriggerZone {
+    fn on_trigger_enter(&self, triggering_entity: usize) {
+        println!("Trigger {} entered!", self.id.to_string())
+    }
+
+    fn on_trigger_exit(&self, triggering_entity: usize) {
+        println!("Trigger {} exited!", self.id.to_string())
+    }
+
+    fn try_add_overlapping_entity(&mut self, other_entity: usize) {
+        if self.overlapping_entities.contains(&other_entity) {
+            // Entity is already in the list, so do nothing
+            return;
+        }
+        self.overlapping_entities.push(other_entity);
+    }
+
+    fn try_remove_overlapping_entity(&mut self, other_entity: usize) {
+        if !self.overlapping_entities.contains(&other_entity) {
+            // Entity is already not in the list, so do nothing
+            return;
+        }
+        let index = self
+            .overlapping_entities
+            .iter()
+            .position(|&e| e == other_entity)
+            .unwrap();
+        let _ = self.overlapping_entities.swap_remove(index);
+    }
+
+    fn get_overlapping_entity_list(&self) -> Vec<usize> {
+        self.overlapping_entities.clone()
+    }
 }
 
 struct Player {
