@@ -83,6 +83,11 @@ impl MyGame {
         let id = physics.new_entity(Vec2::new(500., 150.), big_square.clone());
         walls.push(Wall {
             id,
+            mesh: wall_mesh.clone(),
+        });
+        let id = physics.new_entity(Vec2::new(400., 400.), big_square.clone());
+        walls.push(Wall {
+            id,
             mesh: wall_mesh,
         });
 
