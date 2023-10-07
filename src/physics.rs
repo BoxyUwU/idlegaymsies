@@ -34,30 +34,14 @@ impl Polygon2D {
         }
     }
 
-    // TODO: deduplicate code - this is literally `new()` but with trigger creation because that has to be tracked somewhere
-    pub fn new_trigger(verts: impl IntoIterator<Item = Vec2>) -> Polygon2D {
-        let verts = verts.into_iter().collect::<Vec<_>>();
-        assert!(
-            verts.len() >= 3,
-            "polygon must consist of at least 3 vertices"
-        );
-
-        let normals = verts
-            .windows(2)
-            .map(|pair| [pair[0], pair[1]])
-            .chain([[*verts.first().unwrap(), *verts.last().unwrap()]])
-            .map(|[a, b]| {
-                let edge = a - b;
-                Vec2::new(-edge.y, edge.x)
-                    .try_normalize()
-                    .expect("failed to normalize normal")
-            })
-            .collect::<Vec<_>>();
-
+    /// Sets the `is_trigger` variable on a Polygon2D.
+    // TODO: is this the most effective way of implementing an optional field?
+    pub fn set_trigger(&self, is_trigger: bool) -> Polygon2D {
         Polygon2D {
-            verts,
-            normals,
-            is_trigger: true,
+            is_trigger,
+            // TODO: this seems like a wasteful clone, but also I seem to remember that cloning is usually cheap, so idk?
+            // Probably a better way to do this.
+            ..self.clone()
         }
     }
 
