@@ -90,6 +90,7 @@ impl PhysicsWorld {
 enum CollisionResult {
     NoCollision,
     Ya(Vec2),
+    Trigger(Vec2),
     Reset,
 }
 
@@ -223,4 +224,50 @@ fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2
 
     // Returns the smallest intersection, or panics if no intersection was found
     Some(smallest_intersect.expect("no mtv generated even though intersection should have occured"))
+}
+
+/// Trait for entities which should not collide, but instead perform an action on overlapping colliders with another entity.
+///
+/// Use `enter(triggering_entity: usize)` and `exit(triggering_entity: usize)` when detecting overlap. If the entity is
+/// not already overlapping, then `on_trigger_enter` or `on_trigger_exit` will be called.
+pub trait Trigger {
+    /// Call this when an entity overlaps with this trigger.
+    fn enter(&self, triggering_entity: usize) {
+        if self.is_previously_overlapping(triggering_entity) {
+            return;
+        }
+        self.add_overlapping_entity(triggering_entity);
+        self.on_trigger_enter(triggering_entity);
+    }
+
+    /// Call this when an entity does not overlap with this trigger.
+    fn exit(&self, triggering_entity: usize) {
+        if !self.is_previously_overlapping(triggering_entity) {
+            return;
+        }
+        self.try_remove_overlapping_entity(triggering_entity);
+        self.on_trigger_exit(triggering_entity);
+    }
+
+    /// Warning: do not call directly. To be implemented by the class with the trait.
+    fn on_trigger_enter(&self, triggering_entity: usize);
+    /// Warning: do not call directly. To be implemented by the class with the trait.
+    fn on_trigger_exit(&self, triggering_entity: usize);
+
+    /// Warning: do not call directly.
+    fn is_previously_overlapping(&self, other_entity: usize) -> bool {
+        if self.get_overlapping_entity_list().contains(&other_entity) {
+            return true;
+        }
+        false
+    }
+    /// Warning: do not call directly. To be implemented by the class with the trait.
+    fn add_overlapping_entity(&self, other_entity: usize);
+    /// Warning: do not call directly. To be implemented by the class with the trait.
+    fn try_remove_overlapping_entity(&self, other_entity: usize);
+
+    /// Warning: do not call directly. To be implemented by the class with the trait.
+    ///
+    /// Must return a `Vec` of entities (`usize`) which are currently overlapping `self`.
+    fn get_overlapping_entity_list(&self) -> Vec<usize>;
 }
