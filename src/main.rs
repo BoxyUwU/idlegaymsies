@@ -180,14 +180,6 @@ impl EventHandler for MyGame {
         let camera_pos =
             self.camera_pos - (Vec2::new(window_dim.width as f32, window_dim.height as f32) / 2.);
 
-        canvas.draw(
-            &Quad,
-            DrawParam::new()
-                .color(Color::RED)
-                .dest(self.physics.position(self.player.id) - camera_pos)
-                .scale(Vec2::new(32., 32.)),
-        );
-
         for wall in &self.walls {
             let pos = self.physics.position(wall.id);
             canvas.draw(
@@ -198,6 +190,13 @@ impl EventHandler for MyGame {
             );
         }
 
+        canvas.draw(
+            &Quad,
+            DrawParam::new()
+                .color(Color::RED)
+                .dest(self.physics.position(self.player.id) - camera_pos)
+                .scale(Vec2::new(32., 32.)),
+        );
         // Draw code here...
         canvas.finish(ctx)
     }
