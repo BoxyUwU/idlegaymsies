@@ -142,8 +142,9 @@ fn check_entity(
             }
         }
     }
-
-    if orig_p1 == p1 {
+    if c1.is_trigger {
+        CollisionResult::NoCollision
+    } else if orig_p1 == p1 {
         CollisionResult::NoCollision
     } else {
         CollisionResult::Ya(p1 - orig_p1)
@@ -152,6 +153,11 @@ fn check_entity(
 
 /// Finds the smallest overlapping vector between
 fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2> {
+    // If either is a trigger, nothing needs to be done
+    if c1.is_trigger || c2.is_trigger {
+        return None;
+    }
+
     // The smallest overlapping vector between the two polygons
     let mut smallest_intersect = None;
 
