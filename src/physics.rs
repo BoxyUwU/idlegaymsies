@@ -94,9 +94,9 @@ impl PhysicsWorld {
     }
 
     pub fn move_entity_to(&mut self, entity: usize, p1: Vec2) {
-        let c1 = &self.colliders[entity];
+        // let c1 = &self.colliders[entity];
 
-        let collision = check_entity(p1, c1, entity, &self.positions, &self.colliders);
+        let collision = check_entity(p1, entity, &self.positions, &mut self.colliders);
         match collision {
             CollisionResult::NoCollision => self.positions[entity] = p1,
             CollisionResult::Ya(mtv) => self.positions[entity] = p1 + mtv,
@@ -121,10 +121,9 @@ enum CollisionResult {
 /// skip: sets the entity to which c1 belongs, to skip over in calculations
 fn check_entity(
     mut p1: Vec2,
-    c1: &Polygon2D,
     skip: usize,
     positions: &[Vec2],
-    colliders: &[Polygon2D],
+    colliders: &mut [Polygon2D],
 ) -> CollisionResult {
     let orig_p1 = p1;
 
@@ -138,10 +137,11 @@ fn check_entity(
         }
         iterations += 1;
 
-        for (n, c2) in colliders.iter().enumerate() {
+        for (n, c2) in colliders.iter_mut().enumerate() {
             if n == skip {
                 continue;
             }
+            let c1 = &mut colliders[skip];
 
             let p2 = positions[n];
 
@@ -160,6 +160,7 @@ fn check_entity(
             }
         }
     }
+    let c1 = &mut colliders[skip];
     if c1.is_trigger {
         CollisionResult::NoCollision
     } else if orig_p1 == p1 {
