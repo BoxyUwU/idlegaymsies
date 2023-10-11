@@ -99,7 +99,7 @@ impl PhysicsWorld {
         self.move_entity_to(entity, to);
     }
 
-    fn get_overlapping_triggers(&self, entity: usize) -> Vec<usize> {
+    pub fn get_overlapping_triggers(&self, entity: usize) -> Vec<usize> {
         let p1 = self.positions[entity];
         let c1 = &self.colliders[entity];
 
