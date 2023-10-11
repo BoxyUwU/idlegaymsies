@@ -6,6 +6,9 @@ use physics::{PhysicsWorld, Polygon2D};
 
 mod physics;
 
+const WALL_COLOR: Color = Color::BLACK;
+const TRIGGER_COLOR: Color = Color::CYAN;
+
 fn main() {
     // Make a Context.
     let (mut ctx, event_loop) = ContextBuilder::new("my_game", "Cool Game Author")
@@ -63,17 +66,17 @@ impl MyGame {
 
         let mut walls = vec![];
 
-        let mesh_from_poly = |poly: &Polygon2D| {
+        let mesh_from_poly = |poly: &Polygon2D, color: Color| {
             Mesh::new_polygon(
                 ctx,
                 DrawMode::Fill(FillOptions::DEFAULT),
                 poly.verts.as_slice(),
-                Color::WHITE,
+                color,
             )
             .unwrap()
         };
 
-        let wall_mesh = mesh_from_poly(&big_square);
+        let wall_mesh = mesh_from_poly(&big_square, WALL_COLOR);
 
         let id = physics.new_entity(Vec2::new(200., 200.), big_square.clone());
         walls.push(Wall {
@@ -93,18 +96,19 @@ impl MyGame {
             Vec2::new(32., 32.),
         ])
         .set_trigger(true);
+        let trigger_mesh = mesh_from_poly(&trigger_square, TRIGGER_COLOR);
 
         let id = physics.new_entity(Vec2::new(400., 400.), trigger_square.clone());
         walls.push(Wall {
             id,
-            mesh: wall_mesh,
+            mesh: trigger_mesh,
         });
 
         //
 
         let mut new_wall = |start, end, pos| {
             let wall_col = Polygon2D::new_line(start, end, 8.);
-            let wall_mesh = mesh_from_poly(&wall_col);
+            let wall_mesh = mesh_from_poly(&wall_col, WALL_COLOR);
             let id = physics.new_entity(pos, wall_col);
             walls.push(Wall {
                 id,
