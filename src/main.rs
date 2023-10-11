@@ -85,7 +85,16 @@ impl MyGame {
             id,
             mesh: wall_mesh.clone(),
         });
-        let id = physics.new_entity(Vec2::new(400., 400.), big_square.clone());
+
+        let trigger_square = Polygon2D::new([
+            Vec2::new(-32., 32.),
+            Vec2::new(-32., -32.),
+            Vec2::new(32., -32.),
+            Vec2::new(32., 32.),
+        ])
+        .set_trigger(true);
+
+        let id = physics.new_entity(Vec2::new(400., 400.), trigger_square.clone());
         walls.push(Wall {
             id,
             mesh: wall_mesh,
