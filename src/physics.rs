@@ -98,6 +98,26 @@ impl PhysicsWorld {
         let to = self.positions[entity] + delta;
         self.move_entity_to(entity, to);
     }
+
+    fn get_overlapping_triggers(&self, entity: usize) -> Vec<usize> {
+        let p1 = self.positions[entity];
+        let c1 = &self.colliders[entity];
+
+        let mut overlapping_triggers = vec![];
+
+        for (n, c2) in self.colliders.iter().enumerate() {
+            if n == entity || !c2.is_trigger {
+                continue;
+            }
+
+            let p2 = self.positions[n];
+            if let Some(_) = check_pair(p1, c1, p2, c2) {
+                overlapping_triggers.push(n);
+            }
+        }
+
+        overlapping_triggers
+    }
 }
 
 enum CollisionResult {
