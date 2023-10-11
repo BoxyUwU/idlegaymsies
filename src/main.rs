@@ -36,7 +36,7 @@ fn main() {
 
 struct MyGame {
     physics: PhysicsWorld,
-
+    workstations: Vec<Workstation>,
     walls: Vec<Wall>,
     player: Player,
 
@@ -51,6 +51,36 @@ struct Wall {
 impl Wall {
     pub fn new(mesh: Mesh, id: usize) -> Wall {
         Wall { mesh, id }
+    }
+}
+
+enum WorkType {
+    Nothing,
+    GameDesign,
+    Programming,
+    Art,
+    Music,
+    SoundEffects,
+    Writing,
+}
+
+struct Workstation {
+    mesh: Mesh,
+    id: usize,
+    work_type: WorkType,
+    progress: f32,
+    in_use: bool,
+}
+
+impl Workstation {
+    pub fn new(mesh: Mesh, id: usize, work_type: WorkType) -> Workstation {
+        Workstation {
+            mesh,
+            id,
+            work_type,
+            progress: 0.,
+            in_use: false,
+        }
     }
 }
 
@@ -71,6 +101,7 @@ impl MyGame {
         ]);
 
         let mut walls = vec![];
+        let mut workstations = vec![];
 
         let mesh_from_poly = |poly: &Polygon2D, color: Color| {
             Mesh::new_polygon(
@@ -89,17 +120,23 @@ impl MyGame {
         let id = physics.new_entity(Vec2::new(500., 150.), big_square.clone());
         walls.push(Wall::new(wall_mesh.clone(), id));
 
-        let trigger_square = Polygon2D::new([
+        let programming_desk_polygon = Polygon2D::new([
             Vec2::new(-32., 32.),
             Vec2::new(-32., -32.),
             Vec2::new(32., -32.),
             Vec2::new(32., 32.),
         ])
         .set_trigger(true);
-        let trigger_mesh = mesh_from_poly(&trigger_square, TRIGGER_COLOR);
+        let programming_desk_mesh = mesh_from_poly(&programming_desk_polygon, TRIGGER_COLOR);
 
-        let id = physics.new_entity(Vec2::new(400., 400.), trigger_square);
-        walls.push(Wall::new(trigger_mesh, id));
+        let id = physics.new_entity(Vec2::new(400., 400.), programming_desk_polygon);
+
+        workstations.push(Workstation::new(
+            programming_desk_mesh,
+            id,
+            WorkType::Programming,
+        ));
+        // walls.push(Wall::new(trigger_mesh, id));
 
         let mut new_wall = |start, end, pos| {
             let wall_col = Polygon2D::new_line(start, end, 8.);
@@ -138,6 +175,7 @@ impl MyGame {
         MyGame {
             physics,
             walls,
+            workstations,
             player: Player { id: player },
 
             camera_pos: Vec2::ZERO,
@@ -164,6 +202,11 @@ impl EventHandler for MyGame {
 
         self.physics.move_entity_by(self.player.id, movement);
 
+        let triggers = self.physics.get_overlapping_triggers(self.player.id);
+        for trigger in triggers {
+            println!("{}", trigger);
+        }
+
         self.camera_pos = self.physics.position(self.player.id);
 
         Ok(())
@@ -180,6 +223,16 @@ impl EventHandler for MyGame {
             let pos = self.physics.position(wall.id);
             canvas.draw(
                 &wall.mesh,
+                DrawParam::new()
+                    .dest(pos - camera_pos)
+                    .color(Color::new(0.7, 0.7, 0.7, 1.0)),
+            );
+        }
+
+        for workstation in &self.workstations {
+            let pos = self.physics.position(workstation.id);
+            canvas.draw(
+                &workstation.mesh,
                 DrawParam::new()
                     .dest(pos - camera_pos)
                     .color(Color::new(0.7, 0.7, 0.7, 1.0)),
