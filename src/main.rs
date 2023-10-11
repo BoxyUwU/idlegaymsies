@@ -46,21 +46,11 @@ struct MyGame {
 struct Wall {
     mesh: Mesh,
     id: usize,
-    trigger_zone: Option<Box<Polygon2D>>, // I have no idea if boxing is a good idea here, send halp
 }
 
 impl Wall {
     pub fn new(mesh: Mesh, id: usize) -> Wall {
-        Wall {
-            mesh,
-            id,
-            trigger_zone: None,
-        }
-    }
-
-    pub fn set_trigger_zone(&mut self, trigger_zone: Option<Box<Polygon2D>>) -> Wall {
-        self.trigger_zone = trigger_zone;
-        *self
+        Wall { mesh, id }
     }
 }
 
@@ -105,11 +95,14 @@ impl MyGame {
             Vec2::new(32., -32.),
             Vec2::new(32., 32.),
         ])
-        .set_trigger(true);
+        .set_trigger(true, |trigger_polygon, other_polygon| {
+            // println!("{} is inside trigger {}!", other_polygon, trigger_polygon); // TODO: add an identifier to each Polygon so this works
+            println!("Trigger activated!");
+        });
         let trigger_mesh = mesh_from_poly(&trigger_square, TRIGGER_COLOR);
 
         let id = physics.new_entity(Vec2::new(400., 400.), trigger_square);
-        walls.push(Wall::new(trigger_mesh, id).set_trigger_zone(Some(Box::new(trigger_square)))); // TODO: wat do here
+        walls.push(Wall::new(trigger_mesh, id)); // Note: previously had trigger setup here
 
         // Context:
         // Triggers are implemented by the `is_trigger` boolean on a Polygon2D. Walls and Polygon2Ds currently have no

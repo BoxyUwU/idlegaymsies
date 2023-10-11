@@ -5,6 +5,10 @@ pub struct Polygon2D {
     pub verts: Vec<Vec2>,
     pub normals: Vec<Vec2>,
     pub is_trigger: bool,
+    trigger_function: Option<fn(&mut Polygon2D, &mut Polygon2D)>, // TODO: should this be a `Box<dyn FnMut>` or something else?
+                                                                  // Referenced: https://stackoverflow.com/questions/27831944/how-do-i-store-a-closure-in-a-struct-in-rust/27832320
+                                                                  // Picked the simplest but least performant (I think) option
+                                                                  // Note: this feels like anti-functional programming with all the potential side-effects...
 }
 
 impl Polygon2D {
@@ -31,14 +35,20 @@ impl Polygon2D {
             verts,
             normals,
             is_trigger: false,
+            trigger_function: None,
         }
     }
 
-    pub fn set_trigger(&self, is_trigger: bool) -> Polygon2D {
+    pub fn set_trigger(
+        &self,
+        is_trigger: bool,
+        trigger_function: fn(&mut Polygon2D, &mut Polygon2D),
+    ) -> Polygon2D {
         Polygon2D {
             verts: self.verts.clone(),
             normals: self.normals.clone(),
             is_trigger,
+            trigger_function: Some(trigger_function),
         }
     }
 
@@ -136,6 +146,14 @@ fn check_entity(
             let p2 = positions[n];
 
             if let Some(collision) = check_pair(p1, c1, p2, c2) {
+                if c1.is_trigger {
+                    match c1.trigger_function {
+                        Some(f) => {
+                            f(&mut c1, &mut c2); // TODO: here's the problem - allowing for mutating state isn't permitted currently
+                        }
+                        None => (),
+                    }
+                }
                 p1 += collision;
                 recheck_collisions = true;
                 continue 'outer;
@@ -153,9 +171,9 @@ fn check_entity(
 
 /// Finds the smallest overlapping vector between
 fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2> {
-    // If either is a trigger, nothing needs to be done
-    if c1.is_trigger || c2.is_trigger {
-        return None;
+    // If the latter is a trigger, nothing needs to be done
+    if c2.is_trigger {
+        return None; // c2.trigger_function will be called when its collision checks are done
     }
 
     // The smallest overlapping vector between the two polygons
