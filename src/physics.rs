@@ -5,10 +5,6 @@ pub struct Polygon2D {
     pub verts: Vec<Vec2>,
     pub normals: Vec<Vec2>,
     pub is_trigger: bool,
-    trigger_function: Option<fn(&mut Polygon2D, &mut Polygon2D)>, // TODO: should this be a `Box<dyn FnMut>` or something else?
-                                                                  // Referenced: https://stackoverflow.com/questions/27831944/how-do-i-store-a-closure-in-a-struct-in-rust/27832320
-                                                                  // Picked the simplest but least performant (I think) option
-                                                                  // Note: this feels like anti-functional programming with all the potential side-effects...
 }
 
 impl Polygon2D {
@@ -35,20 +31,14 @@ impl Polygon2D {
             verts,
             normals,
             is_trigger: false,
-            trigger_function: None,
         }
     }
 
-    pub fn set_trigger(
-        &self,
-        is_trigger: bool,
-        trigger_function: fn(&mut Polygon2D, &mut Polygon2D),
-    ) -> Polygon2D {
+    pub fn set_trigger(&self, is_trigger: bool) -> Polygon2D {
         Polygon2D {
             verts: self.verts.clone(),
             normals: self.normals.clone(),
             is_trigger,
-            trigger_function: Some(trigger_function),
         }
     }
 
@@ -94,9 +84,9 @@ impl PhysicsWorld {
     }
 
     pub fn move_entity_to(&mut self, entity: usize, p1: Vec2) {
-        // let c1 = &self.colliders[entity];
+        let c1 = &self.colliders[entity];
 
-        let collision = check_entity(p1, entity, &self.positions, &mut self.colliders);
+        let collision = check_entity(p1, c1, entity, &self.positions, &self.colliders);
         match collision {
             CollisionResult::NoCollision => self.positions[entity] = p1,
             CollisionResult::Ya(mtv) => self.positions[entity] = p1 + mtv,
@@ -121,9 +111,10 @@ enum CollisionResult {
 /// skip: sets the entity to which c1 belongs, to skip over in calculations
 fn check_entity(
     mut p1: Vec2,
+    c1: &Polygon2D,
     skip: usize,
     positions: &[Vec2],
-    colliders: &mut [Polygon2D],
+    colliders: &[Polygon2D],
 ) -> CollisionResult {
     let orig_p1 = p1;
 
@@ -137,30 +128,21 @@ fn check_entity(
         }
         iterations += 1;
 
-        for (n, c2) in colliders.iter_mut().enumerate() {
+        let c1 = &colliders[skip];
+        for (n, c2) in colliders.iter().enumerate() {
             if n == skip {
                 continue;
             }
-            let c1 = &mut colliders[skip];
 
             let p2 = positions[n];
 
             if let Some(collision) = check_pair(p1, c1, p2, c2) {
-                if c1.is_trigger {
-                    match c1.trigger_function {
-                        Some(f) => {
-                            f(&mut c1, &mut c2); // TODO: here's the problem - allowing for mutating state isn't permitted currently
-                        }
-                        None => (),
-                    }
-                }
                 p1 += collision;
                 recheck_collisions = true;
                 continue 'outer;
             }
         }
     }
-    let c1 = &mut colliders[skip];
     if c1.is_trigger {
         CollisionResult::NoCollision
     } else if orig_p1 == p1 {

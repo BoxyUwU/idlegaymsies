@@ -95,25 +95,11 @@ impl MyGame {
             Vec2::new(32., -32.),
             Vec2::new(32., 32.),
         ])
-        .set_trigger(true, |trigger_polygon, other_polygon| {
-            // println!("{} is inside trigger {}!", other_polygon, trigger_polygon); // TODO: add an identifier to each Polygon so this works
-            println!("Trigger activated!");
-        });
+        .set_trigger(true);
         let trigger_mesh = mesh_from_poly(&trigger_square, TRIGGER_COLOR);
 
         let id = physics.new_entity(Vec2::new(400., 400.), trigger_square);
-        walls.push(Wall::new(trigger_mesh, id)); // Note: previously had trigger setup here
-
-        // Context:
-        // Triggers are implemented by the `is_trigger` boolean on a Polygon2D. Walls and Polygon2Ds currently have no
-        // reference to each other, so this is an attempt to add such a thing. However, `trigger_square` is moved into
-        // the physics entity. I suspect simply redoing everything to allow the physics entity to make use of references
-        // would end up screwing up lots of things, so I'm not doing that. The reason for adding a link between them is
-        // so that a Polygon2D can, on trigger, call the linked Wall's relevant function (not currently implemented).
-        //
-        // Alternative: put the function on the Polygon2D at creation. This feels dumb but simple.
-        //
-        // Alternative: access the trigger through PhysicsWorld. This feels overly complex, possibly.
+        walls.push(Wall::new(trigger_mesh, id));
 
         let mut new_wall = |start, end, pos| {
             let wall_col = Polygon2D::new_line(start, end, 8.);
