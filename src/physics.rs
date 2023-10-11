@@ -34,10 +34,11 @@ impl Polygon2D {
         }
     }
 
-    pub fn set_trigger(&self, is_trigger: bool) -> Polygon2D {
+    #[must_use = "weird to not use this"]
+    pub fn set_trigger(self, is_trigger: bool) -> Polygon2D {
         Polygon2D {
-            verts: self.verts.clone(),
-            normals: self.normals.clone(),
+            verts: self.verts,
+            normals: self.normals,
             is_trigger,
         }
     }
@@ -150,7 +151,7 @@ fn check_entity(
 
         let c1 = &colliders[skip];
         for (n, c2) in colliders.iter().enumerate() {
-            if n == skip {
+            if n == skip || c2.is_trigger {
                 continue;
             }
 
@@ -174,11 +175,6 @@ fn check_entity(
 
 /// Finds the smallest overlapping vector between
 fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2> {
-    // If the latter is a trigger, nothing needs to be done
-    if c2.is_trigger {
-        return None; // c2.trigger_function will be called when its collision checks are done
-    }
-
     // The smallest overlapping vector between the two polygons
     let mut smallest_intersect = None;
 

@@ -221,22 +221,12 @@ impl EventHandler for MyGame {
 
         for wall in &self.walls {
             let pos = self.physics.position(wall.id);
-            canvas.draw(
-                &wall.mesh,
-                DrawParam::new()
-                    .dest(pos - camera_pos)
-                    .color(Color::new(0.7, 0.7, 0.7, 1.0)),
-            );
+            canvas.draw(&wall.mesh, DrawParam::new().dest(pos - camera_pos));
         }
 
         for workstation in &self.workstations {
             let pos = self.physics.position(workstation.id);
-            canvas.draw(
-                &workstation.mesh,
-                DrawParam::new()
-                    .dest(pos - camera_pos)
-                    .color(Color::new(0.7, 0.7, 0.7, 1.0)),
-            );
+            canvas.draw(&workstation.mesh, DrawParam::new().dest(pos - camera_pos));
         }
 
         canvas.draw(
