@@ -46,6 +46,22 @@ struct MyGame {
 struct Wall {
     mesh: Mesh,
     id: usize,
+    trigger_zone: Option<Box<Polygon2D>>, // I have no idea if boxing is a good idea here, send halp
+}
+
+impl Wall {
+    pub fn new(mesh: Mesh, id: usize) -> Wall {
+        Wall {
+            mesh,
+            id,
+            trigger_zone: None,
+        }
+    }
+
+    pub fn set_trigger_zone(&mut self, trigger_zone: Option<Box<Polygon2D>>) -> Wall {
+        self.trigger_zone = trigger_zone;
+        *self
+    }
 }
 
 struct Player {
@@ -79,15 +95,9 @@ impl MyGame {
         let wall_mesh = mesh_from_poly(&big_square, WALL_COLOR);
 
         let id = physics.new_entity(Vec2::new(200., 200.), big_square.clone());
-        walls.push(Wall {
-            id,
-            mesh: wall_mesh.clone(),
-        });
+        walls.push(Wall::new(wall_mesh.clone(), id));
         let id = physics.new_entity(Vec2::new(500., 150.), big_square.clone());
-        walls.push(Wall {
-            id,
-            mesh: wall_mesh.clone(),
-        });
+        walls.push(Wall::new(wall_mesh.clone(), id));
 
         let trigger_square = Polygon2D::new([
             Vec2::new(-32., 32.),
@@ -98,22 +108,25 @@ impl MyGame {
         .set_trigger(true);
         let trigger_mesh = mesh_from_poly(&trigger_square, TRIGGER_COLOR);
 
-        let id = physics.new_entity(Vec2::new(400., 400.), trigger_square.clone());
-        walls.push(Wall {
-            id,
-            mesh: trigger_mesh,
-        });
+        let id = physics.new_entity(Vec2::new(400., 400.), trigger_square);
+        walls.push(Wall::new(trigger_mesh, id).set_trigger_zone(Some(Box::new(trigger_square)))); // TODO: wat do here
 
+        // Context:
+        // Triggers are implemented by the `is_trigger` boolean on a Polygon2D. Walls and Polygon2Ds currently have no
+        // reference to each other, so this is an attempt to add such a thing. However, `trigger_square` is moved into
+        // the physics entity. I suspect simply redoing everything to allow the physics entity to make use of references
+        // would end up screwing up lots of things, so I'm not doing that. The reason for adding a link between them is
+        // so that a Polygon2D can, on trigger, call the linked Wall's relevant function (not currently implemented).
         //
+        // Alternative: put the function on the Polygon2D at creation. This feels dumb but simple.
+        //
+        // Alternative: access the trigger through PhysicsWorld. This feels overly complex, possibly.
 
         let mut new_wall = |start, end, pos| {
             let wall_col = Polygon2D::new_line(start, end, 8.);
             let wall_mesh = mesh_from_poly(&wall_col, WALL_COLOR);
             let id = physics.new_entity(pos, wall_col);
-            walls.push(Wall {
-                id,
-                mesh: wall_mesh,
-            });
+            walls.push(Wall::new(wall_mesh, id));
         };
 
         let room_size = 800.;
