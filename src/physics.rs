@@ -4,6 +4,7 @@ use ggez::glam::Vec2;
 pub struct Polygon2D {
     pub verts: Vec<Vec2>,
     pub normals: Vec<Vec2>,
+    pub is_trigger: bool,
 }
 
 impl Polygon2D {
@@ -26,7 +27,19 @@ impl Polygon2D {
             })
             .collect::<Vec<_>>();
 
-        Polygon2D { verts, normals }
+        Polygon2D {
+            verts,
+            normals,
+            is_trigger: false,
+        }
+    }
+
+    pub fn set_trigger(&self, is_trigger: bool) -> Polygon2D {
+        Polygon2D {
+            verts: self.verts.clone(),
+            normals: self.normals.clone(),
+            is_trigger,
+        }
     }
 
     pub fn new_line(start: Vec2, end: Vec2, thickness: f32) -> Polygon2D {
