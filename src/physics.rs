@@ -4,6 +4,7 @@ use ggez::glam::Vec2;
 pub struct Polygon2D {
     pub verts: Vec<Vec2>,
     pub normals: Vec<Vec2>,
+    pub is_trigger: bool,
 }
 
 impl Polygon2D {
@@ -26,7 +27,20 @@ impl Polygon2D {
             })
             .collect::<Vec<_>>();
 
-        Polygon2D { verts, normals }
+        Polygon2D {
+            verts,
+            normals,
+            is_trigger: false,
+        }
+    }
+
+    #[must_use = "weird to not use this"]
+    pub fn set_trigger(self, is_trigger: bool) -> Polygon2D {
+        Polygon2D {
+            verts: self.verts,
+            normals: self.normals,
+            is_trigger,
+        }
     }
 
     pub fn new_line(start: Vec2, end: Vec2, thickness: f32) -> Polygon2D {
@@ -85,6 +99,26 @@ impl PhysicsWorld {
         let to = self.positions[entity] + delta;
         self.move_entity_to(entity, to);
     }
+
+    pub fn get_overlapping_triggers(&self, entity: usize) -> Vec<usize> {
+        let p1 = self.positions[entity];
+        let c1 = &self.colliders[entity];
+
+        let mut overlapping_triggers = vec![];
+
+        for (n, c2) in self.colliders.iter().enumerate() {
+            if n == entity || !c2.is_trigger {
+                continue;
+            }
+
+            let p2 = self.positions[n];
+            if let Some(_) = check_pair(p1, c1, p2, c2) {
+                overlapping_triggers.push(n);
+            }
+        }
+
+        overlapping_triggers
+    }
 }
 
 enum CollisionResult {
@@ -92,6 +126,10 @@ enum CollisionResult {
     Ya(Vec2),
     Reset,
 }
+
+/// Given a collider c1 moving to position p1, returns any collisions with other valid colliders moving to new positions.
+///
+/// skip: sets the entity to which c1 belongs, to skip over in calculations
 fn check_entity(
     mut p1: Vec2,
     c1: &Polygon2D,
@@ -111,8 +149,9 @@ fn check_entity(
         }
         iterations += 1;
 
+        let c1 = &colliders[skip];
         for (n, c2) in colliders.iter().enumerate() {
-            if n == skip {
+            if n == skip || c2.is_trigger {
                 continue;
             }
 
@@ -125,17 +164,22 @@ fn check_entity(
             }
         }
     }
-
-    if orig_p1 == p1 {
+    if c1.is_trigger {
+        CollisionResult::NoCollision
+    } else if orig_p1 == p1 {
         CollisionResult::NoCollision
     } else {
         CollisionResult::Ya(p1 - orig_p1)
     }
 }
 
+/// Finds the smallest overlapping vector between
 fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2> {
+    // The smallest overlapping vector between the two polygons
     let mut smallest_intersect = None;
 
+    // Collect the normals of both polygons, then iterate through the list
+    // This finds the smallest intersecting vector
     for &axis in c1.normals.iter().chain(c2.normals.iter()) {
         let calc_min_max = |position: Vec2, collider: &Polygon2D| {
             let (mut min, mut max) = {
@@ -213,5 +257,6 @@ fn check_pair(p1: Vec2, c1: &Polygon2D, p2: Vec2, c2: &Polygon2D) -> Option<Vec2
         };
     }
 
+    // Returns the smallest intersection, or panics if no intersection was found
     Some(smallest_intersect.expect("no mtv generated even though intersection should have occured"))
 }
